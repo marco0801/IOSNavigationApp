@@ -2,11 +2,11 @@ import SwiftUI
 import MapKit
 
 struct BikeMapView: UIViewRepresentable {
-    var route: GPXRoute?
     var recordedPoints: [CLLocationCoordinate2D]
     var userLocation: CLLocationCoordinate2D?
     var heading: Double
     var followUser: Bool
+    var route: GPXRoute?
     var navigationEngine: NavigationEngine?
 
     func makeUIView(context: Context) -> MKMapView {
@@ -17,11 +17,11 @@ struct BikeMapView: UIViewRepresentable {
         map.showsCompass = true
         map.showsScale = true
         map.mapType = .standard
+        map.isPitchEnabled = true
+        map.isRotateEnabled = true
+        map.isScrollEnabled = true
+        map.isZoomEnabled = true
         return map
-    }
-    
-    mutating func reset() {
-        self.route = nil
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
@@ -30,8 +30,8 @@ struct BikeMapView: UIViewRepresentable {
         let nonUserAnnotations = map.annotations.filter { !($0 is MKUserLocation) }
         map.removeAnnotations(nonUserAnnotations)
 
-        // Draw imported GPX route (grey)
-        if let route = route, !route.trackPoints.isEmpty {
+        // Draw selected GPX route (orange dashed)
+        if let route, !route.trackPoints.isEmpty {
             let polyline = MKPolyline(coordinates: route.trackPoints, count: route.trackPoints.count)
             polyline.title = "gpx_route"
             map.addOverlay(polyline, level: .aboveRoads)
@@ -44,9 +44,9 @@ struct BikeMapView: UIViewRepresentable {
                 map.addAnnotation(pin)
             }
 
-            // Zoom to route if no active recording
-            if recordedPoints.isEmpty {
-                zoomToFit(map: map, coordinates: route.trackPoints)
+            // Use a tighter initial zoom for the route, but let the user change it manually.
+            if recordedPoints.isEmpty && map.region.span.latitudeDelta == 0 {
+                zoomToFit(map: map, coordinates: route.trackPoints, paddingFactor: 0.18)
             }
         }
 
@@ -63,7 +63,7 @@ struct BikeMapView: UIViewRepresentable {
         }
     }
 
-    private func zoomToFit(map: MKMapView, coordinates: [CLLocationCoordinate2D]) {
+    private func zoomToFit(map: MKMapView, coordinates: [CLLocationCoordinate2D], paddingFactor: Double = 0.22) {
         guard !coordinates.isEmpty else { return }
         var minLat = coordinates[0].latitude,  maxLat = coordinates[0].latitude
         var minLon = coordinates[0].longitude, maxLon = coordinates[0].longitude
@@ -76,8 +76,8 @@ struct BikeMapView: UIViewRepresentable {
             longitude: (minLon + maxLon) / 2
         )
         let span = MKCoordinateSpan(
-            latitudeDelta:  (maxLat - minLat) * 1.3,
-            longitudeDelta: (maxLon - minLon) * 1.3
+            latitudeDelta:  max((maxLat - minLat) * paddingFactor, 0.001),
+            longitudeDelta: max((maxLon - minLon) * paddingFactor, 0.001)
         )
         map.setRegion(MKCoordinateRegion(center: center, span: span), animated: true)
     }

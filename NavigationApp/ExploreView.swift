@@ -9,6 +9,10 @@ struct ExploreView: View {
     @State private var parseError: String?
     @State private var showError = false
     @State private var importedRoutes: [GPXRoute] = []
+    
+    func reset(){
+        activeRoute = nil;
+    }
 
     var body: some View {
         NavigationStack {

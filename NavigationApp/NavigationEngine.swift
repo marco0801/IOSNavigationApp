@@ -9,7 +9,7 @@ class NavigationEngine: ObservableObject {
     @Published var progressIndex: Int = 0
     @Published var isOffRoute: Bool = false
 
-    private var route: GPXRoute?
+    private var currentRoute: GPXRoute?
     private var distancesFromStart: [Double] = []
 
     // How close to a turn before we show it (meters)
@@ -20,14 +20,15 @@ class NavigationEngine: ObservableObject {
     // MARK: - Setup
 
     func setRoute(_ route: GPXRoute) {
-        self.route = route
+        currentRoute = route
         precomputeDistances(route.trackPoints)
         distanceToEnd = distancesFromStart.last ?? 0
         currentTurn = route.turns.first
+        distanceToNextTurn = 0
     }
 
     func reset() {
-        route = nil
+        currentRoute = nil
         distancesFromStart = []
         currentTurn = nil
         distanceToNextTurn = 0
@@ -39,7 +40,7 @@ class NavigationEngine: ObservableObject {
     // MARK: - Update with new location
 
     func update(location: CLLocation) {
-        guard let route = route, !route.trackPoints.isEmpty else { return }
+        guard let route = currentRoute, !route.trackPoints.isEmpty else { return }
 
         // Find closest point on route
         let (closestIndex, closestDist) = findClosestPoint(to: location, in: route.trackPoints)
@@ -47,6 +48,7 @@ class NavigationEngine: ObservableObject {
         isOffRoute = closestDist > offRouteThreshold
 
         // Distance remaining
+        guard closestIndex < distancesFromStart.count else { return }
         let totalDist = distancesFromStart.last ?? 0
         let coveredDist = distancesFromStart[closestIndex]
         distanceToEnd = max(0, totalDist - coveredDist)

@@ -18,7 +18,7 @@ struct RootView: View {
                 .tag(0)
 
             // ── Tab 2: Ride ──
-            RideView(activeRoute: activeRoute)
+            RideView(activeRoute: $activeRoute)
                 .tabItem {
                     Label("Ride", systemImage: "bicycle")
                 }
@@ -33,7 +33,7 @@ struct RootView: View {
                 .tag(2)
         }
         .onChange(of: activeRoute?.id) { _, _ in
-            // When a new route is set, configure the nav engine
+            // Keep the route source, singleton map state, and navigation engine in sync
             if let route = activeRoute {
                 navEngine.setRoute(route)
             } else {

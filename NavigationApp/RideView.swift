@@ -8,7 +8,7 @@ struct RideView: View {
     @EnvironmentObject var navEngine: NavigationEngine
     @EnvironmentObject var routeStore: RouteStore
 
-    var activeRoute: GPXRoute?
+    @Binding var activeRoute: GPXRoute?
 
     @State private var showSaveDialog = false
     @State private var rideName = ""
@@ -23,11 +23,11 @@ struct RideView: View {
                 // ── MAP (top half) ──
                 ZStack(alignment: .top) {
                     BikeMapView(
-                        route: displayedRoute,
                         recordedPoints: recorder.trackPoints.map(\.coordinate),
                         userLocation: locationManager.currentLocation?.coordinate,
                         heading: locationManager.currentHeading,
                         followUser: followUser,
+                        route: activeRoute,
                         navigationEngine: navEngine
                     )
                     .ignoresSafeArea(edges: .top)
@@ -64,14 +64,23 @@ struct RideView: View {
                 ControlBar(
                     showSaveDialog: $showSaveDialog,
                     rideName: $rideName,
+                    activeRoute: $activeRoute,
                     onReset: {
                         displayedRoute = nil
+                        activeRoute = nil
                         followUser = true
                     }
                 )
                 .padding(.bottom, 280) // above stats panel
                 .padding(.horizontal)
             }
+        }
+        .onAppear {
+            displayedRoute = activeRoute
+        }
+        .onChange(of: activeRoute?.id) { _, _ in
+            displayedRoute = activeRoute
+            followUser = true
         }
         .onReceive(locationManager.$currentLocation.compactMap { $0 }) { location in
             recorder.addLocation(location)
@@ -95,9 +104,6 @@ struct RideView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: navEngine.currentTurn?.id)
         .animation(.easeInOut(duration: 0.3), value: navEngine.isOffRoute)
-        .onAppear {
-            displayedRoute = activeRoute
-        }
     }
 
     private func saveRide() {
@@ -202,6 +208,7 @@ struct ControlBar: View {
     @EnvironmentObject var navEngine: NavigationEngine
     @Binding var showSaveDialog: Bool
     @Binding var rideName: String
+    @Binding var activeRoute: GPXRoute?
     var onReset: (() -> Void)? = nil
 
     var body: some View {
