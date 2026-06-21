@@ -1,6 +1,6 @@
 # App Name
 
-Short description of what the app does and its main purpose.
+Short description.
 
 ## Features
 
@@ -11,5 +11,7 @@ Short description of what the app does and its main purpose.
 
 ## Screenshots
 
-<!-- Add screenshots or GIFs here -->
+## Architecture
+
+## License
 
